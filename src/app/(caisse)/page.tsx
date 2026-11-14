@@ -1,6 +1,8 @@
 import { OuvrirJournee } from "@/features/caisse/OuvrirJournee";
+import { EcranVente } from "@/features/caisse/vente/EcranVente";
 import { journeeOuverte } from "@/lib/caisse/session";
-import { euros } from "@/lib/format";
+import type { ApercuJournee, DossierPret } from "@/lib/caisse/types";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function Page() {
   const journee = await journeeOuverte();
@@ -9,16 +11,17 @@ export default async function Page() {
     return <OuvrirJournee />;
   }
 
+  const supabase = await createClient();
+  const [dossiers, apercu] = await Promise.all([
+    supabase.schema("caisse").rpc("dossiers_prets"),
+    supabase.schema("caisse").rpc("apercu_cloture"),
+  ]);
+
   return (
-    <section className="mx-auto mt-10 max-w-xl rounded-2xl border border-border bg-white p-8 text-center">
-      <h2 className="text-lg font-bold">Journée n°{journee.numero} ouverte</h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Ouverte par {journee.ouverte_par} · {journee.nb_tickets} ticket
-        {journee.nb_tickets > 1 ? "s" : ""} · {euros(journee.total_ttc)}
-      </p>
-      <p className="mt-6 rounded-lg bg-[#FFF8C5] px-4 py-3 text-sm text-[#5C4A00]">
-        L&apos;écran de vente arrive à la prochaine étape.
-      </p>
-    </section>
+    <EcranVente
+      dossiers={(dossiers.data as DossierPret[] | null) ?? []}
+      erreurDossiers={dossiers.error?.message ?? null}
+      apercu={(apercu.data as ApercuJournee | null) ?? null}
+    />
   );
 }
