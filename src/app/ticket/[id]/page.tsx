@@ -180,6 +180,7 @@ export default async function Page({
         </div>
         {ticket.client_nom ? <div>Client : {ticket.client_nom}</div> : null}
         {ticket.dossier_id ? <div>Dossier atelier n°{ticket.dossier_id}</div> : null}
+        {ticket.type === "acompte" ? <div>Acompte à déduire de la facture finale du dossier</div> : null}
         {origine ? <div>Annule le ticket {numeroTicket(origine.numero)}</div> : null}
         {ticket.motif ? <div>Motif : {ticket.motif}</div> : null}
         <hr className="my-2 border-dashed border-black" />

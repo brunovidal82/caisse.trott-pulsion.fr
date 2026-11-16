@@ -1,6 +1,7 @@
 "use client";
 
-import { Barcode, Plus, Search } from "lucide-react";
+import { Barcode, HandCoins, Plus, Search } from "lucide-react";
+import { Acompte as FenetreAcompte } from "@/features/caisse/acompte/Acompte";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { euros } from "@/lib/format";
 import {
@@ -51,6 +52,7 @@ export function EcranVente({ dossiers, erreurDossiers, apercu }: Props) {
   const [modale, setModale] = useState<
     | null
     | { type: "libre" }
+    | { type: "acompte" }
     | { type: "encaissement"; moyen: Moyen }
     | { type: "fini"; resultat: Extract<ResultatVente, { ok: true }>; paiements: Paiement[] }
   >(null);
@@ -340,6 +342,16 @@ export function EcranVente({ dossiers, erreurDossiers, apercu }: Props) {
               Ligne libre
             </button>
           }
+          actionsDroite={
+            <button
+              type="button"
+              onClick={() => setModale({ type: "acompte" })}
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border bg-white px-3 text-sm font-medium hover:bg-muted"
+            >
+              <HandCoins className="size-4" />
+              Acompte sur dossier
+            </button>
+          }
         />
       </div>
 
@@ -366,6 +378,8 @@ export function EcranVente({ dossiers, erreurDossiers, apercu }: Props) {
           }}
         />
       ) : null}
+
+      {modale?.type === "acompte" ? <FenetreAcompte onFermer={() => setModale(null)} /> : null}
 
       {modale?.type === "encaissement" ? (
         <Encaissement

@@ -15,12 +15,22 @@ const LIBELLES: Record<Paiement["moyen"], string> = {
 };
 
 type Props = {
-  resultat: Extract<ResultatVente, { ok: true }>;
+  resultat: Pick<Extract<ResultatVente, { ok: true }>, "ticketId" | "numero" | "totalTtc">;
   paiements: Paiement[];
   onNouvelleVente: () => void;
+  titre?: string;
+  libelle?: string;
+  detail?: string;
 };
 
-export function VenteEnregistree({ resultat, paiements, onNouvelleVente }: Props) {
+export function VenteEnregistree({
+  resultat,
+  paiements,
+  onNouvelleVente,
+  titre = "Vente enregistrée",
+  libelle = "Vente",
+  detail,
+}: Props) {
   const rendu = renduMonnaie(paiements);
 
   useEffect(() => {
@@ -36,11 +46,14 @@ export function VenteEnregistree({ resultat, paiements, onNouvelleVente }: Props
   }
 
   return (
-    <Modale titre="Vente enregistrée">
+    <Modale titre={titre}>
       <div className="flex items-center gap-3">
         <CheckCircle2 className="size-10 text-emerald-600" />
         <div>
-          <b className="text-lg">Vente n° {numeroTicket(resultat.numero)}</b>
+          <b className="text-lg">
+            {libelle} n° {numeroTicket(resultat.numero)}
+          </b>
+          {detail ? <div className="text-sm">{detail}</div> : null}
           <div className="text-sm text-muted-foreground">
             {euros(resultat.totalTtc)} · {paiements.map((p) => LIBELLES[p.moyen]).join(" + ") || "sans paiement"}
           </div>

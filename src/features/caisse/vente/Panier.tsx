@@ -27,6 +27,7 @@ type Props = {
   onVider: () => void;
   onEncaisser: (moyen: Moyen) => void;
   actionsSupplementaires?: React.ReactNode;
+  actionsDroite?: React.ReactNode;
 };
 
 const MOYENS: { id: Moyen; libelle: string; detail?: string }[] = [
@@ -56,6 +57,7 @@ export function Panier({
   onVider,
   onEncaisser,
   actionsSupplementaires,
+  actionsDroite,
 }: Props) {
   const [moyen, setMoyen] = useState<Moyen>("cb");
   const [ouverte, setOuverte] = useState<string | null>(null);
@@ -133,7 +135,12 @@ export function Panier({
         ))}
       </div>
 
-      {actionsSupplementaires ? <div className="flex flex-wrap gap-2">{actionsSupplementaires}</div> : null}
+      {actionsSupplementaires || actionsDroite ? (
+        <div className="flex flex-wrap gap-2">
+          {actionsSupplementaires}
+          {actionsDroite}
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 border-t border-border pt-3 text-sm">
         <span className="text-muted-foreground">Total HT</span>
