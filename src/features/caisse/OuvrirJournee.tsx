@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ouvrirJournee, type EtatFormulaire } from "@/features/caisse/actions";
+import { euros } from "@/lib/format";
 
-export function OuvrirJournee() {
+export function OuvrirJournee({ fondPrecedent = null }: { fondPrecedent?: number | null }) {
   const [etat, action, enCours] = useActionState<EtatFormulaire, FormData>(
     ouvrirJournee,
     {},
@@ -31,10 +32,16 @@ export function OuvrirJournee() {
           inputMode="decimal"
           autoComplete="off"
           placeholder="150,00"
+          defaultValue={fondPrecedent !== null ? fondPrecedent.toFixed(2).replace(".", ",") : undefined}
           required
           autoFocus
           className="h-11 text-lg"
         />
+        {fondPrecedent !== null ? (
+          <p className="text-xs text-muted-foreground">
+            Laissé à la dernière clôture : {euros(fondPrecedent)}. Corrige si tu comptes autre chose.
+          </p>
+        ) : null}
       </div>
       {etat.erreur ? (
         <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">

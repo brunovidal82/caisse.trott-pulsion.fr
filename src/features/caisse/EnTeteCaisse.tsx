@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { changerVendeur, quitterCaisse } from "@/features/caisse/actions";
 import type { Journee, Vendeur } from "@/lib/caisse/session";
 import { euros, heure, initiales } from "@/lib/format";
@@ -27,6 +28,14 @@ export function EnTeteCaisse({ vendeur, journee }: Props) {
           </span>
           {vendeur.prenom}
         </span>
+        {journee ? (
+          <Link
+            href="/cloture"
+            className="h-8 rounded-lg bg-white/15 px-3 text-sm leading-8 font-medium hover:bg-white/25"
+          >
+            Clôturer la journée
+          </Link>
+        ) : null}
         <form action={changerVendeur}>
           <button
             type="submit"
