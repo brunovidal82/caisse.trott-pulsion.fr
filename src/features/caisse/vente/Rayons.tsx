@@ -11,6 +11,7 @@ import {
   lireIconesChoisies,
   type Icone,
 } from "@/lib/caisse/icones";
+import { compterMarques, trierParMarque } from "@/lib/caisse/marques";
 import { RAYONS, type RayonId } from "@/lib/caisse/rayons";
 import { produitsDeCategorie, type ProduitCaisse } from "./actions";
 import { ChoixIcone } from "./ChoixIcone";
@@ -29,6 +30,8 @@ export function Rayons({ onChoisir }: Props) {
   const [categorie, setCategorie] = useState<string | null>(null);
   const [produits, setProduits] = useState<ProduitCaisse[] | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [marque, setMarque] = useState<string | null>(null);
+  const [voirEpuisees, setVoirEpuisees] = useState(false);
   const [iconesChoisies, setIconesChoisies] = useState<Record<string, Icone> | null>(null);
   const [iconeAChanger, setIconeAChanger] = useState<string | null>(null);
 
@@ -44,9 +47,14 @@ export function Rayons({ onChoisir }: Props) {
   }
 
   const rayon = RAYONS.find((r) => r.id === rayonId) ?? null;
+  const filtreStock = rayon?.id === "trottinettes";
+  const epuisees = filtreStock && produits ? produits.filter(estEpuisee).length : 0;
+  const visibles =
+    produits && filtreStock && !voirEpuisees ? produits.filter((p) => !estEpuisee(p)) : produits;
 
   async function ouvrirCategorie(nom: string) {
     setCategorie(nom);
+    setMarque(null);
     setProduits(null);
     setErreur(null);
     try {
@@ -126,6 +134,43 @@ export function Rayons({ onChoisir }: Props) {
         {produits ? <span className="text-sm text-muted-foreground">{produits.length} articles</span> : null}
       </div>
 
+      {rayon.id === "trottinettes" && visibles && produits && produits.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrer par marque">
+          {[{ marque: null as string | null, nombre: visibles.length }, ...compterMarques(visibles)].map((m) => (
+            <button
+              key={m.marque ?? "toutes"}
+              type="button"
+              onClick={() => setMarque(m.marque)}
+              aria-pressed={marque === m.marque}
+              className={`h-9 rounded-full border px-3.5 text-sm font-medium ${
+                marque === m.marque
+                  ? "border-[#0F172A] bg-[#0F172A] text-white"
+                  : "border-border bg-white text-slate-700 hover:border-slate-400"
+              }`}
+            >
+              {m.marque ?? "Toutes"} · {m.nombre}
+            </button>
+          ))}
+          {epuisees > 0 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setVoirEpuisees((v) => !v);
+                setMarque(null);
+              }}
+              aria-pressed={voirEpuisees}
+              className={`ml-auto h-9 rounded-full border px-3.5 text-sm font-medium ${
+                voirEpuisees
+                  ? "border-amber-600 bg-amber-50 text-amber-800"
+                  : "border-dashed border-slate-300 bg-white text-slate-600 hover:border-slate-400"
+              }`}
+            >
+              {voirEpuisees ? `Masquer les épuisées (${epuisees})` : `Afficher les épuisées (${epuisees})`}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
       {!categorie ? (
         <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-4">
           {rayon.categories.map((c) =>
@@ -174,6 +219,10 @@ export function Rayons({ onChoisir }: Props) {
         <p className="py-6 text-center text-sm text-muted-foreground">Chargement…</p>
       ) : produits.length === 0 ? (
         <p className="py-6 text-center text-sm text-muted-foreground">Aucun article dans cette catégorie.</p>
+      ) : visibles && visibles.length === 0 ? (
+        <p className="py-6 text-center text-sm text-muted-foreground">
+          Aucune trottinette en stock. Clique sur « Afficher les épuisées » pour voir les autres.
+        </p>
       ) : (
         <div
           className={
@@ -182,7 +231,10 @@ export function Rayons({ onChoisir }: Props) {
               : "grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3"
           }
         >
-          {produits.map((p) => (
+          {(rayon.id === "trottinettes"
+            ? trierParMarque(visibles ?? []).filter((p) => marque === null || p.marque === marque)
+            : produits
+          ).map((p) => (
             <TuileProduit key={p.id} produit={p} onChoisir={onChoisir} grand={rayon.id === "trottinettes"} />
           ))}
         </div>
@@ -198,6 +250,10 @@ export function Rayons({ onChoisir }: Props) {
       ) : null}
     </section>
   );
+}
+
+function estEpuisee(produit: ProduitCaisse) {
+  return produit.stock !== null && produit.stock <= 0;
 }
 
 export function TuileProduit({
@@ -221,9 +277,12 @@ export function TuileProduit({
       <button
         type="button"
         onClick={() => onChoisir(produit)}
-        className="flex flex-col gap-2 rounded-xl border border-border bg-white p-3 text-left hover:border-slate-400"
+        className={`flex flex-col gap-2 rounded-xl border border-border bg-white p-3 text-left hover:border-slate-400 ${
+          stockBas ? "opacity-60" : ""
+        }`}
       >
         <PhotoProduit photo={produit.photo} categorie={produit.categorie} designation={produit.designation} taille={150} pleineLargeur />
+        <small className="text-[11px] font-semibold tracking-wide text-[#9f360a] uppercase">{produit.marque}</small>
         <b className="line-clamp-2 text-sm leading-tight font-semibold">{produit.designation}</b>
         <div className="flex items-center justify-between">
           <span className="text-base font-bold tabular-nums">{euros(produit.prixTtc)}</span>

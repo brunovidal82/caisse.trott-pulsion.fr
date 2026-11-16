@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { Paiement } from "@/lib/caisse/panier";
+import { marqueDe } from "@/lib/caisse/marques";
 import { vendeurConnecte } from "@/lib/caisse/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,6 +15,7 @@ export type ProduitCaisse = {
   categorie: string | null;
   stock: number | null;
   photo: string | null;
+  marque: string;
 };
 
 type LigneProduit = {
@@ -23,15 +25,42 @@ type LigneProduit = {
   sale_price: number | string | null;
   vat_rate: number | string | null;
   category: string | null;
+  brand: string | null;
   images: unknown;
 };
 
-const COLONNES = "id, code, designation, sale_price, vat_rate, category, images";
+const COLONNES = "id, code, designation, sale_price, vat_rate, category, brand, images";
+
+const URL_SUPABASE = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
+
+function urlPhoto(valeur: string): string | null {
+  const texte = valeur.trim();
+  if (!texte) return null;
+  if (/^https?:\/\//.test(texte)) return texte;
+  if (texte.startsWith("//")) return `https:${texte}`;
+  const chemin = texte.replace(/^\/+/, "").replace(/^product-images\//, "");
+  return URL_SUPABASE ? `${URL_SUPABASE}/storage/v1/object/public/product-images/${chemin}` : null;
+}
 
 function premierePhoto(images: unknown): string | null {
+  if (typeof images === "string") {
+    const texte = images.trim();
+    if (texte.startsWith("[")) {
+      try {
+        return premierePhoto(JSON.parse(texte));
+      } catch {
+        return null;
+      }
+    }
+    return urlPhoto(texte);
+  }
   if (!Array.isArray(images)) return null;
-  const url = images.find((i): i is string => typeof i === "string" && /^https?:\/\//.test(i.trim()));
-  return url ? url.trim() : null;
+  for (const image of images) {
+    if (typeof image !== "string") continue;
+    const url = urlPhoto(image);
+    if (url) return url;
+  }
+  return null;
 }
 
 async function avecStock(lignes: LigneProduit[]): Promise<ProduitCaisse[]> {
@@ -59,6 +88,7 @@ async function avecStock(lignes: LigneProduit[]): Promise<ProduitCaisse[]> {
     categorie: l.category,
     stock: parProduit.has(l.id) ? (parProduit.get(l.id) as number) : null,
     photo: premierePhoto(l.images),
+    marque: marqueDe(l.brand, l.designation),
   }));
 }
 
@@ -101,12 +131,14 @@ export async function produitParCode(code: string): Promise<ProduitCaisse | null
 
 export async function produitsDeCategorie(categorie: string): Promise<ProduitCaisse[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select(COLONNES)
-    .eq("category", categorie)
-    .order("designation")
-    .limit(300);
+  const requete = (masquerCaches: boolean) => {
+    const base = supabase.from("products").select(COLONNES).eq("category", categorie);
+    return (masquerCaches ? base.eq("afficher_en_caisse", true) : base).order("designation").limit(300);
+  };
+  let { data, error } = await requete(true);
+  if (error?.code === "42703") {
+    ({ data, error } = await requete(false));
+  }
   if (error) throw new Error(error.message);
   return avecStock((data ?? []) as LigneProduit[]);
 }
