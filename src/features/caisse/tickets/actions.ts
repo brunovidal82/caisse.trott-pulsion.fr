@@ -267,9 +267,9 @@ export async function annulerTicket(demande: {
       ticket_id: demande.ticketId,
       motif: demande.motif.trim(),
       remboursement: demande.remboursement,
-      lignes: demande.lignes
-        ? demande.lignes.map((l) => ({ ligne_id: l.ligneId, quantite: l.quantite }))
-        : null,
+      ...(demande.lignes
+        ? { lignes: demande.lignes.map((l) => ({ ligne_id: l.ligneId, quantite: l.quantite })) }
+        : {}),
     },
   });
   if (error) return { ok: false, erreur: error.message };
