@@ -68,8 +68,16 @@ function quantite(valeur: number | string) {
   return Number(valeur).toLocaleString("fr-FR", { maximumFractionDigits: 3 });
 }
 
-export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+export default async function Page({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ duplicata?: string }>;
+}) {
   const { id } = await params;
+  const { duplicata } = await searchParams;
+  const numeroDuplicata = duplicata && /^\d+$/.test(duplicata) ? Number(duplicata) : null;
   const supabase = await createClient();
   const caisse = supabase.schema("caisse");
 
@@ -148,6 +156,11 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
             <div key={l}>{l}</div>
           ))}
         </div>
+        {numeroDuplicata ? (
+          <div className="my-2 border-2 border-black py-1 text-center text-[13px] font-bold">
+            DUPLICATA N°{numeroDuplicata}
+          </div>
+        ) : null}
         {ticket.mode_test ? (
           <div className="my-2 border border-black py-1 text-center font-bold">
             MODE TEST

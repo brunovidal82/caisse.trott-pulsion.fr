@@ -28,6 +28,12 @@ export function EnTeteCaisse({ vendeur, journee }: Props) {
           </span>
           {vendeur.prenom}
         </span>
+        <Link
+          href="/tickets"
+          className="h-8 rounded-lg bg-white/15 px-3 text-sm leading-8 font-medium hover:bg-white/25"
+        >
+          Tickets
+        </Link>
         {journee ? (
           <Link
             href="/cloture"
