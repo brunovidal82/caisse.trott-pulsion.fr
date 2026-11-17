@@ -1,11 +1,13 @@
 "use client";
 
-import { Printer, Undo2, X } from "lucide-react";
+import { ExternalLink, FileText, Printer, Undo2, X } from "lucide-react";
 import { useState } from "react";
 import { numeroTicket } from "@/lib/caisse/panier";
 import { euros } from "@/lib/format";
 import { noterDuplicata, type TicketDetail } from "./actions";
 import { FormulaireAnnulation } from "./FormulaireAnnulation";
+import { FormulaireFacture } from "./FormulaireFacture";
+import { URL_FORMULAIREDB } from "@/lib/caisse/boutique";
 
 const LIBELLE_MOYEN = { cb: "CB", especes: "Espèces", virement: "Virement", avoir: "Avoir" } as const;
 
@@ -25,6 +27,8 @@ function raisonBlocage(t: TicketDetail): string | null {
 
 export function DetailTicket({ ticket, onFermer, onAnnule }: Props) {
   const [annulation, setAnnulation] = useState(false);
+  const [facture, setFacture] = useState(false);
+  const facturable = ticket.type === "vente" && ticket.annule === "non" && !ticket.facture;
   const [erreur, setErreur] = useState<string | null>(null);
   const blocage = raisonBlocage(ticket);
 
@@ -113,7 +117,23 @@ export function DetailTicket({ ticket, onFermer, onAnnule }: Props) {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2">
+      {ticket.facture ? (
+        <a
+          href={`${URL_FORMULAIREDB}/factures/${ticket.facture.invoiceId}`}
+          target="_blank"
+          rel="noreferrer"
+          className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm"
+        >
+          <span>
+            Facture <b>{ticket.facture.numero ?? "—"}</b>
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            Ouvrir dans FormulaireDB <ExternalLink className="size-3.5" />
+          </span>
+        </a>
+      ) : null}
+
+      <div className="grid gap-2" style={{ gridTemplateColumns: facturable ? "1fr 1fr 1fr" : "1fr 1fr" }}>
         <button
           type="button"
           onClick={duplicata}
@@ -122,6 +142,16 @@ export function DetailTicket({ ticket, onFermer, onAnnule }: Props) {
           <Printer className="size-4" />
           Duplicata
         </button>
+        {facturable ? (
+          <button
+            type="button"
+            onClick={() => setFacture(true)}
+            className="flex h-11 items-center justify-center gap-2 rounded-xl border border-border text-sm font-semibold hover:bg-muted"
+          >
+            <FileText className="size-4" />
+            Facture
+          </button>
+        ) : null}
         <button
           type="button"
           disabled={blocage !== null}
@@ -136,6 +166,17 @@ export function DetailTicket({ ticket, onFermer, onAnnule }: Props) {
       </div>
       {blocage && ticket.type !== "annulation" ? <p className="text-xs text-muted-foreground">{blocage}</p> : null}
       {erreur ? <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{erreur}</p> : null}
+
+      {facture ? (
+        <FormulaireFacture
+          ticket={ticket}
+          onFermer={() => setFacture(false)}
+          onTermine={async () => {
+            setFacture(false);
+            await onAnnule(ticket.id);
+          }}
+        />
+      ) : null}
 
       {annulation ? (
         <FormulaireAnnulation

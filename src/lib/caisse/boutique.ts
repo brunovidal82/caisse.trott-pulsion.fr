@@ -9,3 +9,7 @@ export const BOUTIQUE = {
   caisse: "Caisse 1",
   merci: "Merci de votre visite",
 } as const;
+
+export const URL_FORMULAIREDB = (
+  process.env.NEXT_PUBLIC_FORMULAIREDB_URL ?? "https://formulaire-db-react.vercel.app"
+).replace(/\/$/, "");

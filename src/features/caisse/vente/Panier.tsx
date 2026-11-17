@@ -13,6 +13,7 @@ import {
 import type { DossierPret } from "@/lib/caisse/types";
 import type { Moyen } from "./Encaissement";
 import { PhotoProduit } from "./PhotoProduit";
+import { RechercheClient } from "@/features/caisse/clients/RechercheClient";
 
 type Props = {
   lignes: LignePanier[];
@@ -80,15 +81,16 @@ export function Panier({
         ) : null}
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-2 text-sm">
         <span className="text-muted-foreground">Client</span>
-        <input
-          value={clientNom}
-          onChange={(e) => onClientNom(e.target.value)}
-          placeholder="Client de passage"
-          className="h-9 flex-1 rounded-lg border border-border px-2"
+        <RechercheClient
+          className="flex-1"
+          valeur={clientNom}
+          onSaisie={onClientNom}
+          placeholder="Client de passage (nom ou téléphone)"
+          onChoisir={(c) => onClientNom([c.prenom, c.nom].filter(Boolean).join(" "))}
         />
-      </label>
+      </div>
 
       {dossier ? (
         <div className="flex items-start gap-2 rounded-xl bg-[#FFF7ED] px-3 py-2 text-sm text-[#7a2500]">

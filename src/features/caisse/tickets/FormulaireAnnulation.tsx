@@ -218,6 +218,12 @@ export function FormulaireAnnulation({ ticket, onFermer, onTermine }: Props) {
           ) : null}
         </div>
 
+        {ticket.facture ? (
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            Ce ticket a une facture ({ticket.facture.numero ?? "—"}). Pense à faire l&apos;avoir correspondant sur la
+            facture dans FormulaireDB.
+          </p>
+        ) : null}
         <p className="rounded-xl bg-slate-50 px-3 py-2 text-sm">
           Crée un ticket d&apos;annulation de <b>{euros(-total)}</b> lié à {numeroTicket(ticket.numero)}. Le stock des
           articles est remis. Rien n&apos;est effacé.

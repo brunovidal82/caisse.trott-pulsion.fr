@@ -40,6 +40,7 @@ export type TicketDetail = TicketResume & {
   annulations: { id: string; numero: number; totalTtc: number; motif: string | null }[];
   acompteDeduit: boolean;
   journeeOuverte: boolean;
+  facture: { invoiceId: string; numero: string | null } | null;
 };
 
 type LigneTicket = {
@@ -187,6 +188,21 @@ export async function detailTicket(id: string): Promise<TicketDetail | null> {
       journeeOuverte(),
     ]);
 
+  const { data: lien } = await caisse
+    .from("factures")
+    .select("invoice_id")
+    .eq("ticket_id", id)
+    .maybeSingle<{ invoice_id: string }>();
+  let facture: TicketDetail["facture"] = null;
+  if (lien) {
+    const { data: invoice } = await supabase
+      .from("invoices")
+      .select("invoice_number")
+      .eq("id", lien.invoice_id)
+      .maybeSingle<{ invoice_number: string | null }>();
+    facture = { invoiceId: lien.invoice_id, numero: invoice?.invoice_number ?? null };
+  }
+
   const idsLignes = ((lignes ?? []) as { id: string }[]).map((l) => l.id);
   const { data: deja } = idsLignes.length
     ? await caisse.from("lignes").select("ligne_origine_id, quantite, total_ttc").in("ligne_origine_id", idsLignes)
@@ -235,6 +251,7 @@ export async function detailTicket(id: string): Promise<TicketDetail | null> {
     ),
     acompteDeduit: ((deduit ?? []) as unknown[]).length > 0,
     journeeOuverte: journee !== null,
+    facture,
   };
 }
 
